@@ -1,3 +1,4 @@
+/* global p5 */
 let bgImg;
 let waterSound;
 
@@ -5,7 +6,7 @@ let fishImgs = [];
 let fishes = [];
 
 function preload() {
-  bgImg = loadImage("assets/bg_lake.jpg");
+  bgImg = loadImage("assets/lake_img.jpg");
 
   soundFormats("wav");
   waterSound = loadSound("assets/water.wav");
@@ -19,7 +20,7 @@ function setup() {
   createCanvas(895, 540);
 
   // 创建三条鱼
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 5; i++) {
     let img = random(fishImgs);
     fishes.push(new Fish(random(width), random(height), img));
   }
@@ -34,49 +35,70 @@ function draw() {
   }
 }
 
-// 浏览器限制：声音必须由用户触发
+// 鼠标点击（电脑）
+
 function mousePressed() {
+  startSound();
+
+  for (let fish of fishes) {
+    fish.clicked(mouseX, mouseY);
+  }
+}
+
+// 手指触摸（手机 / 平板）
+
+function touchStarted() {
+  startSound();
+
+  for (let fish of fishes) {
+    fish.clicked(mouseX, mouseY);
+  }
+
+  return false; // 防止页面滚动
+}
+
+// 播放水声（浏览器需要用户触发）
+
+function startSound() {
   userStartAudio();
+
   if (!waterSound.isPlaying()) {
     waterSound.loop();
     waterSound.setVolume(0.5);
   }
-
-  //for (let fish of fishes) {
-  //  fish.clicked(mouseX, mouseY);
-  //}
 }
+
+// 鱼类
 
 class Fish {
   constructor(x, y, img) {
     this.pos = createVector(x, y);
     this.img = img;
 
-    this.normalSpeed = 0.4;
+    this.normalSpeed = 0.8;
     this.fastSpeed = 2.2;
     this.speed = this.normalSpeed;
 
     this.angle = random(TWO_PI);
-    this.noiseOffset = random(1000); // Perlin noise 偏移
+    this.noiseOffset = random(1000);
 
     this.isFast = false;
     this.timer = 0;
-    this.fastDuration = 120; // 约 2 秒（60fps）
+    this.fastDuration = 120; // 约2秒（60fps）
 
-    this.scaleFactor = 0.12; // 按原比例放大
+    this.scaleFactor = 0.15;
   }
 
   update() {
-    // 使用噪声调整角度，使鱼转向自然
+    // 噪声控制方向变化
     this.angle += map(noise(this.noiseOffset), 0, 1, -0.02, 0.02);
-    this.noiseOffset += 0.01; // 控制变化速度
+    this.noiseOffset += 0.01;
 
-    // 速度微调，让鱼游动有起伏感
-    let speedVariation = map(noise(this.noiseOffset + 100), 0, 1, -0.05, 0.05);
+    // 速度微变化
+    let speedVariation = map(noise(this.noiseOffset + 100), 0, 1, -0.1, 0.1);
     let currentSpeed = this.speed + speedVariation;
 
-    // 计算运动向量
-    let v = p5.Vector.fromAngle(this.angle);
+    let v = createVector(cos(this.angle), sin(this.angle));
     v.mult(currentSpeed);
     this.pos.add(v);
 
@@ -86,15 +108,7 @@ class Fish {
     if (this.pos.y > height) this.pos.y = 0;
     if (this.pos.y < 0) this.pos.y = height;
 
-    // 鼠标悬停加速
-    let d = dist(mouseX, mouseY, this.pos.x, this.pos.y);
-    if (d < (this.img.width * this.scaleFactor) / 2) {
-      this.speed = this.fastSpeed;
-      this.isFast = true;
-      this.timer = 0;
-    }
-
-    // 加速状态计时
+    // 加速计时
     if (this.isFast) {
       this.timer++;
       if (this.timer > this.fastDuration) {
@@ -107,7 +121,7 @@ class Fish {
     push();
     translate(this.pos.x, this.pos.y);
 
-    // 尾巴轻微摆动效果
+    // 尾巴摆动
     let tailSwing = sin(frameCount * 0.05 + this.noiseOffset * 5) * 0.05;
     rotate(this.angle + tailSwing);
 
@@ -118,10 +132,13 @@ class Fish {
 
     pop();
   }
-  //触碰鱼加速游的范围
+
+  // 点击 / 触摸检测
   clicked(mx, my) {
     let d = dist(mx, my, this.pos.x, this.pos.y);
-    if (d < (this.img.width * this.scaleFactor) / 5) {
+
+    // 点击范围（适合触屏）
+    if (d < this.img.width * this.scaleFactor * 0.6) {
       this.speed = this.fastSpeed;
       this.isFast = true;
       this.timer = 0;
