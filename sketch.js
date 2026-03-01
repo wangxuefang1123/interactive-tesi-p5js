@@ -6,7 +6,7 @@ let waterSound;
 let fishImgs = [];
 let fishes = [];
 
-//世界真实尺寸
+// 世界真实尺寸
 let worldW = 1920;
 let worldH = 1080;
 
@@ -25,7 +25,7 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
 
   // 创建鱼（在世界坐标中）
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 7; i++) {
     let img = random(fishImgs);
     fishes.push(new Fish(random(worldW), random(worldH), img));
   }
@@ -34,59 +34,63 @@ function setup() {
 function draw() {
   background(0);
 
-  //等比缩放世界到屏幕
-  let scaleFactor = min(width / worldW, height / worldH);
+  // ---------- 背景铺满屏幕（保持比例，可能裁剪） ----------
+  let scaleX = width / bgImg.width;
+  let scaleY = height / bgImg.height;
+  let bgScale = max(scaleX, scaleY);
+
+  let imgW = bgImg.width * bgScale;
+  let imgH = bgImg.height * bgScale;
+
+  let offsetX = (width - imgW) / 2;
+  let offsetY = (height - imgH) / 2;
+
+  image(bgImg, offsetX, offsetY, imgW, imgH);
+
+  // ---------- 居中缩放世界坐标 ----------
+  let worldScale = min(width / worldW, height / worldH);
 
   push();
-
-  // 居中显示
   translate(
-    (width - worldW * scaleFactor) / 2,
-    (height - worldH * scaleFactor) / 2,
+    (width - worldW * worldScale) / 2,
+    (height - worldH * worldScale) / 2,
   );
-
-  scale(scaleFactor);
-
-  //背景按世界尺寸画
-  image(bgImg, 0, 0, worldW, worldH);
+  scale(worldScale);
 
   for (let fish of fishes) {
     fish.update();
     fish.display();
   }
-
   pop();
 }
 
-//屏幕尺寸变化
+// 屏幕尺寸变化
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
 
 // 鼠标点击
-
 function mousePressed() {
   startSound();
   handleTouch(mouseX, mouseY);
 }
 
 // 触屏
-
 function touchStarted() {
   startSound();
   handleTouch(mouseX, mouseY);
   return false;
 }
 
-//把屏幕坐标转换为世界坐标
+// 把屏幕坐标转换为世界坐标
 function handleTouch(px, py) {
-  let scaleFactor = min(width / worldW, height / worldH);
+  let worldScale = min(width / worldW, height / worldH);
 
-  let offsetX = (width - worldW * scaleFactor) / 2;
-  let offsetY = (height - worldH * scaleFactor) / 2;
+  let offsetX = (width - worldW * worldScale) / 2;
+  let offsetY = (height - worldH * worldScale) / 2;
 
-  let worldX = (px - offsetX) / scaleFactor;
-  let worldY = (py - offsetY) / scaleFactor;
+  let worldX = (px - offsetX) / worldScale;
+  let worldY = (py - offsetY) / worldScale;
 
   for (let fish of fishes) {
     fish.clicked(worldX, worldY);
@@ -101,7 +105,7 @@ function startSound() {
   }
 }
 
-// 鱼
+// ---------- 鱼类 ----------
 class Fish {
   constructor(x, y, img) {
     this.pos = createVector(x, y);
@@ -132,7 +136,7 @@ class Fish {
     v.mult(currentSpeed);
     this.pos.add(v);
 
-    // 使用世界边界
+    // 世界边界循环
     if (this.pos.x > worldW) this.pos.x = 0;
     if (this.pos.x < 0) this.pos.x = worldW;
     if (this.pos.y > worldH) this.pos.y = 0;
