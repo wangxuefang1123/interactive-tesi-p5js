@@ -10,6 +10,9 @@ let fishes = [];
 let worldW = 1920;
 let worldH = 1080;
 
+// ✅ 是否已经进入全屏
+let hasEnteredFullscreen = false;
+
 function preload() {
   bgImg = loadImage("assets/lake_img.png");
 
@@ -34,7 +37,7 @@ function setup() {
 function draw() {
   background(0);
 
-  // ---------- 背景铺满屏幕（保持比例，可能裁剪） ----------
+  // ---------- 背景铺满屏幕 ----------
   let scaleX = width / bgImg.width;
   let scaleY = height / bgImg.height;
   let bgScale = max(scaleX, scaleY);
@@ -47,7 +50,7 @@ function draw() {
 
   image(bgImg, offsetX, offsetY, imgW, imgH);
 
-  // ---------- 居中缩放世界坐标 ----------
+  // ---------- 世界坐标 ----------
   let worldScale = min(width / worldW, height / worldH);
 
   push();
@@ -61,6 +64,7 @@ function draw() {
     fish.update();
     fish.display();
   }
+
   pop();
 }
 
@@ -69,17 +73,34 @@ function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
 
-// 鼠标点击
+// ===============================
+// ✅ 鼠标点击
+// ===============================
 function mousePressed() {
+  enterFullscreenOnce();
   startSound();
   handleTouch(mouseX, mouseY);
 }
 
-// 触屏
+// ===============================
+// ✅ 触屏点击
+// ===============================
 function touchStarted() {
+  enterFullscreenOnce();
   startSound();
   handleTouch(mouseX, mouseY);
   return false;
+}
+
+// ===============================
+// ✅ 只触发一次的全屏函数
+// ===============================
+function enterFullscreenOnce() {
+  if (!hasEnteredFullscreen) {
+    let fs = fullscreen();
+    fullscreen(!fs);
+    hasEnteredFullscreen = true;
+  }
 }
 
 // 把屏幕坐标转换为世界坐标
@@ -99,13 +120,16 @@ function handleTouch(px, py) {
 
 function startSound() {
   userStartAudio();
+
   if (!waterSound.isPlaying()) {
     waterSound.loop();
     waterSound.setVolume(0.5);
   }
 }
 
-// ---------- 鱼类 ----------
+// ===============================
+// 鱼类
+// ===============================
 class Fish {
   constructor(x, y, img) {
     this.pos = createVector(x, y);
@@ -130,6 +154,7 @@ class Fish {
     this.noiseOffset += 0.01;
 
     let speedVariation = map(noise(this.noiseOffset + 100), 0, 1, -0.1, 0.1);
+
     let currentSpeed = this.speed + speedVariation;
 
     let v = createVector(cos(this.angle), sin(this.angle));
@@ -155,6 +180,7 @@ class Fish {
     translate(this.pos.x, this.pos.y);
 
     let tailSwing = sin(frameCount * 0.05 + this.noiseOffset * 5) * 0.05;
+
     rotate(this.angle + tailSwing);
 
     imageMode(CENTER);
